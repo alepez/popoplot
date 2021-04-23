@@ -1,5 +1,7 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+use tokio_stream::StreamExt;
+use tokio_util::codec::{Framed, LinesCodec};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -9,31 +11,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let (mut socket, _) = listener.accept().await?;
 
         tokio::spawn(async move {
-            let mut buf = [0; 1024];
+            let mut server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
 
-            // In a loop, read data from the socket and write the data back.
-            loop {
-                let n = match socket.read(&mut buf).await {
-                    // socket closed
-                    Ok(n) if n == 0 => return,
-                    Ok(n) => n,
-                    Err(e) => {
-                        eprintln!("failed to read from socket; err = {:?}", e);
-                        return;
-                    }
-                };
-
-                // Write the data back
-                if let Err(e) = socket.write_all(&buf[0..n]).await {
-                    eprintln!("failed to write to socket; err = {:?}", e);
-                    return;
+            while let Some(Ok(line)) = server.next().await {
+                if let Ok(x) = line.parse() {
+                    let bar_width = calculate_bar_width(x, 0.0, 100.0, 80.0) as usize;
+                    print_bar(bar_width);
                 }
             }
         });
     }
 }
 
-fn calculate_bar_capacity(x: f64, min: f64, max: f64, bar_capacity: f64) -> f64 {
+fn calculate_bar_width(x: f64, min: f64, max: f64, bar_capacity: f64) -> f64 {
     let y = ((x - min) / (max - min)) * bar_capacity;
     if y < 0.0 { 0.0 } else { y }
 }
@@ -51,10 +41,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn calculate_bar_capacity_test() {
-        assert_eq!(calculate_bar_capacity(10.0, 0.0, 100.0, 50.0), 5.0);
-        assert_eq!(calculate_bar_capacity(50.0, 30.0, 130.0, 100.0), 20.0);
-        assert_eq!(calculate_bar_capacity(10.0, 30.0, 100.0, 50.0), 0.0);
+    fn calculate_bar_width_test() {
+        assert_eq!(calculate_bar_width(10.0, 0.0, 100.0, 50.0), 5.0);
+        assert_eq!(calculate_bar_width(50.0, 30.0, 130.0, 100.0), 20.0);
+        assert_eq!(calculate_bar_width(10.0, 30.0, 100.0, 50.0), 0.0);
     }
 
     #[test]
