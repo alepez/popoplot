@@ -32,3 +32,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 }
+
+fn calculate_bar_capacity(x: f64, min: f64, max: f64, bar_capacity: f64) -> f64 {
+    let y = ((x - min) / (max - min)) * bar_capacity;
+    if y < 0.0 { 0.0 } else { y }
+}
+
+fn bar_to_string(bar_width: usize) -> String {
+    std::iter::repeat("-").take(bar_width).collect::<String>()
+}
+
+fn print_bar(bar_width: usize) {
+    println!("{}", bar_to_string(bar_width));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn calculate_bar_capacity_test() {
+        assert_eq!(calculate_bar_capacity(10.0, 0.0, 100.0, 50.0), 5.0);
+        assert_eq!(calculate_bar_capacity(50.0, 30.0, 130.0, 100.0), 20.0);
+        assert_eq!(calculate_bar_capacity(10.0, 30.0, 100.0, 50.0), 0.0);
+    }
+
+    #[test]
+    fn bar_to_string_test() {
+        assert_eq!(bar_to_string(8), "--------");
+        assert_eq!(bar_to_string(10), "----------");
+    }
+}
