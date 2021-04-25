@@ -7,8 +7,7 @@ license = "MIT"
 keywords = ["visualization", "plotting", "drawing"]
 repository = "https://github.com/alepez/popoplot"
 readme = "README.md"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+categories = ["visualization"]
 
 [dependencies]
 tokio = { version = "1.5.0", features = ["full"] }
