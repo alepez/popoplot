@@ -1,4 +1,3 @@
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LinesCodec};
@@ -8,7 +7,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
     loop {
-        let (mut socket, _) = listener.accept().await?;
+        let (socket, _) = listener.accept().await?;
 
         tokio::spawn(async move {
             let mut server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
@@ -25,7 +24,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn calculate_bar_width(x: f64, min: f64, max: f64, bar_capacity: f64) -> f64 {
     let y = ((x - min) / (max - min)) * bar_capacity;
-    if y < 0.0 { 0.0 } else { y }
+    if y < 0.0 {
+        0.0
+    } else {
+        y
+    }
 }
 
 fn bar_to_string(bar_width: usize) -> String {
@@ -53,3 +56,4 @@ mod tests {
         assert_eq!(bar_to_string(10), "----------");
     }
 }
+
