@@ -6,8 +6,11 @@ edition = "2018"
 license = "MIT"
 keywords = ["visualization", "plotting", "drawing"]
 repository = "https://github.com/alepez/popoplot"
+homepage = "https://github.com/alepez/popoplot"
 readme = "README.md"
 categories = ["visualization"]
+description = "A tool to visualize real time numerical data as a line chart"
+documentation = "https://github.com/alepez/popoplot"
 
 [dependencies]
 tokio = { version = "1.5.0", features = ["full"] }
