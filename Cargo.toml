@@ -11,6 +11,9 @@ readme = "README.md"
 categories = ["visualization"]
 description = "A tool to visualize real time numerical data as a line chart"
 documentation = "https://github.com/alepez/popoplot"
+exclude = [
+    ".gitignore",
+]
 
 [dependencies]
 tokio = { version = "1.5.0", features = ["full"] }
