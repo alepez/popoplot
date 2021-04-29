@@ -11,10 +11,6 @@ fn bar_to_string(bar_width: usize) -> String {
     std::iter::repeat("-").take(bar_width).collect::<String>()
 }
 
-fn print_bar(bar_width: usize) {
-    println!("{}", bar_to_string(bar_width));
-}
-
 #[derive(Clone)]
 pub struct TextPlotter<Out: std::io::Write> {
     bar_capacity: usize,
@@ -31,9 +27,15 @@ impl<Out: std::io::Write> TextPlotter<Out> {
         }
     }
 
-    pub fn update(&self, x: f64) {
+    pub fn update(&mut self, x: f64) {
         let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.bar_capacity);
-        print_bar(bar_width);
+        let str = bar_to_string(bar_width);
+        self.output.write(str.as_bytes()).unwrap();
+        self.output.write(b"\n").unwrap();
+    }
+
+    fn into_output(self) -> Out {
+        self.output
     }
 }
 
@@ -69,8 +71,14 @@ mod tests {
     #[test]
     fn terminal_plotter_test() {
         let range = Range::new(0.0, 100.0);
-        let output = std::io::stdout();
-        let tp = TextPlotter::new(100, range, output.lock());
+        let output = Vec::new();
+        let mut tp = TextPlotter::new(100, range, output);
         tp.update(50.0);
+        tp.update(5.0);
+        let output = tp.into_output();
+        assert_eq!(
+            output,
+            b"--------------------------------------------------\n-----\n"
+        );
     }
 }
