@@ -69,7 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn terminal_plotter_test() {
+    fn text_plotter_test() {
         let range = Range::new(0.0, 100.0);
         let output = Vec::new();
         let mut tp = TextPlotter::new(100, range, output);
