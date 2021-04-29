@@ -28,14 +28,30 @@ impl<Out: std::io::Write> TextPlotter<Out> {
     }
 
     pub fn update(&mut self, x: f64) {
-        let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.bar_capacity);
-        let str = bar_to_string(bar_width);
+        let str = self.to_string(x);
         self.output.write(str.as_bytes()).unwrap();
         self.output.write(b"\n").unwrap();
     }
 
     fn into_output(self) -> Out {
         self.output
+    }
+
+    fn to_string(&self, x: f64) -> String {
+        let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.bar_capacity);
+        let overflow = bar_width > self.bar_capacity;
+        if overflow {
+            // TODO Show overflow icon
+            std::iter::repeat("=")
+                .take(self.bar_capacity)
+                .collect::<String>()
+        } else {
+            let padding_width = self.bar_capacity - bar_width;
+            std::iter::repeat("=")
+                .take(bar_width)
+                .chain(std::iter::repeat(".").take(padding_width))
+                .collect::<String>()
+        }
     }
 }
 
@@ -70,15 +86,12 @@ mod tests {
 
     #[test]
     fn text_plotter_test() {
-        let range = Range::new(0.0, 100.0);
+        let range = Range::new(0.0, 10.0);
         let output = Vec::new();
-        let mut tp = TextPlotter::new(100, range, output);
-        tp.update(50.0);
+        let mut tp = TextPlotter::new(10, range, output);
         tp.update(5.0);
+        tp.update(2.0);
         let output = tp.into_output();
-        assert_eq!(
-            output,
-            b"--------------------------------------------------\n-----\n"
-        );
+        assert_eq!(output, b"=====.....\n==........\n");
     }
 }
