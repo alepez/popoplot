@@ -1,6 +1,7 @@
 mod text_plotter;
 
 use std::net::SocketAddr;
+use std::sync::Arc;
 use structopt::StructOpt;
 use text_plotter::{Range, TextPlotter};
 use tokio::net::TcpListener;
@@ -30,7 +31,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind(opt.bind).await?;
 
     let range = Range::new(opt.min, opt.max);
-    let tp = TextPlotter::new(opt.bar_capacity, range);
+    let output = std::io::stdout();
+    let tp = TextPlotter::new(opt.bar_capacity, range, output);
+    let tp = Arc::new(tp);
 
     loop {
         let (socket, _) = listener.accept().await?;

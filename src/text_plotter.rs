@@ -16,16 +16,18 @@ fn print_bar(bar_width: usize) {
 }
 
 #[derive(Clone)]
-pub struct TextPlotter {
+pub struct TextPlotter<Out: std::io::Write> {
     bar_capacity: usize,
     range: Range,
+    output: Out,
 }
 
-impl TextPlotter {
-    pub fn new(bar_capacity: usize, range: Range) -> Self {
+impl<Out: std::io::Write> TextPlotter<Out> {
+    pub fn new(bar_capacity: usize, range: Range, output: Out) -> Self {
         TextPlotter {
             bar_capacity,
             range,
+            output,
         }
     }
 
@@ -67,7 +69,8 @@ mod tests {
     #[test]
     fn terminal_plotter_test() {
         let range = Range::new(0.0, 100.0);
-        let tp = TextPlotter::new(100, range);
+        let output = std::io::stdout();
+        let tp = TextPlotter::new(100, range, output.lock());
         tp.update(50.0);
     }
 }
