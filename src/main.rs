@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind(opt.bind).await?;
 
     let range = Range::new(opt.min, opt.max);
-    let tp = TerminalPlotter::new(opt.bar_capacity, range);
+    let tp = TextPlotter::new(opt.bar_capacity, range);
 
     loop {
         let (socket, _) = listener.accept().await?;
@@ -63,14 +63,14 @@ fn print_bar(bar_width: usize) {
 }
 
 #[derive(Clone)]
-struct TerminalPlotter {
+struct TextPlotter {
     bar_capacity: usize,
     range: Range,
 }
 
-impl TerminalPlotter {
+impl TextPlotter {
     fn new(bar_capacity: usize, range: Range) -> Self {
-        TerminalPlotter {
+        TextPlotter {
             bar_capacity,
             range,
         }
@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn terminal_plotter_test() {
         let range = Range::new(0.0, 100.0);
-        let tp = TerminalPlotter::new(100, range);
+        let tp = TextPlotter::new(100, range);
         tp.update(50.0);
     }
 }
