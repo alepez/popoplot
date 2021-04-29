@@ -50,7 +50,10 @@ struct TerminalPlotter {
 
 impl TerminalPlotter {
     fn new(bar_capacity: usize, range: Range) -> Self {
-        TerminalPlotter { bar_capacity, range }
+        TerminalPlotter {
+            bar_capacity,
+            range,
+        }
     }
 
     fn update(&self, x: f64) {
@@ -95,4 +98,3 @@ mod tests {
         tp.update(50.0);
     }
 }
-
