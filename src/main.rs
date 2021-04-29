@@ -1,13 +1,33 @@
+use std::net::SocketAddr;
+use structopt::StructOpt;
 use tokio::net::TcpListener;
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LinesCodec};
 
+#[derive(StructOpt, Debug)]
+#[structopt(name = "basic")]
+struct Opt {
+    #[structopt(long, default_value = "0")]
+    min: f64,
+
+    #[structopt(long, default_value = "100")]
+    max: f64,
+
+    #[structopt(long, default_value = "100")]
+    bar_capacity: usize,
+
+    #[structopt(long, default_value = "127.0.0.1:9999")]
+    bind: SocketAddr,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let listener = TcpListener::bind("127.0.0.1:8080").await?;
+    let opt = Opt::from_args();
 
-    let range = Range::new(0.0, 100.0);
-    let tp = TerminalPlotter::new(80, range);
+    let listener = TcpListener::bind(opt.bind).await?;
+
+    let range = Range::new(opt.min, opt.max);
+    let tp = TerminalPlotter::new(opt.bar_capacity, range);
 
     loop {
         let (socket, _) = listener.accept().await?;
