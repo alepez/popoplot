@@ -1,6 +1,6 @@
 [package]
 name = "popoplot"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Alessandro Pezzato <alessandro.pezzato@gmail.com>"]
 edition = "2018"
 license = "MIT"
