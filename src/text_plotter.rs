@@ -7,10 +7,6 @@ fn calculate_bar_width(x: f64, min: f64, max: f64, bar_capacity: usize) -> usize
     }
 }
 
-fn bar_to_string(bar_width: usize) -> String {
-    std::iter::repeat("-").take(bar_width).collect::<String>()
-}
-
 #[derive(Clone)]
 pub struct TextPlotter<Out: std::io::Write> {
     bar_capacity: usize,
@@ -40,7 +36,7 @@ impl<Out: std::io::Write> TextPlotter<Out> {
     fn to_string(&self, x: f64) -> String {
         let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.bar_capacity);
         let overflow = bar_width > self.bar_capacity;
-        if overflow {
+        let bar = if overflow {
             // TODO Show overflow icon
             std::iter::repeat("=")
                 .take(self.bar_capacity)
@@ -51,7 +47,8 @@ impl<Out: std::io::Write> TextPlotter<Out> {
                 .take(bar_width)
                 .chain(std::iter::repeat(".").take(padding_width))
                 .collect::<String>()
-        }
+        };
+        [bar, format!("{}", x)].join(" ")
     }
 }
 
@@ -79,12 +76,6 @@ mod tests {
     }
 
     #[test]
-    fn bar_to_string_test() {
-        assert_eq!(bar_to_string(8), "--------");
-        assert_eq!(bar_to_string(10), "----------");
-    }
-
-    #[test]
     fn text_plotter_test() {
         let range = Range::new(0.0, 10.0);
         let output = Vec::new();
@@ -92,6 +83,6 @@ mod tests {
         tp.update(5.0);
         tp.update(2.0);
         let output = tp.into_output();
-        assert_eq!(output, b"=====.....\n==........\n");
+        assert_eq!(output, b"=====..... 5\n==........ 2\n");
     }
 }
