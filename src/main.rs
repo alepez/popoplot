@@ -36,7 +36,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let range = Range::new(opt.min, opt.max);
     let output = std::io::stdout();
 
-    launch_multiple_connections_server(opt, listener, range, output).await
+    let mult_conn = opt.multiple_connections;
+
+    if mult_conn {
+        launch_multiple_connections_server(opt, listener, range, output).await
+    } else {
+        launch_single_connection_server(opt, listener, range, output).await
+    }
 }
 
 async fn launch_multiple_connections_server(
@@ -61,5 +67,26 @@ async fn launch_multiple_connections_server(
                 }
             }
         });
+    }
+}
+
+async fn launch_single_connection_server(
+    opt: Opt,
+    listener: TcpListener,
+    range: Range,
+    output: std::io::Stdout,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let tp = TextPlotter::new(opt.bar_capacity, range, output);
+    let tp = Arc::new(Mutex::new(tp));
+
+    loop {
+        let (socket, _) = listener.accept().await?;
+        let mut server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
+
+        while let Some(Ok(line)) = server.next().await {
+            if let Ok(x) = line.parse() {
+                tp.lock().unwrap().update(x);
+            }
+        }
     }
 }
