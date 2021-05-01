@@ -2,7 +2,6 @@ mod text_plotter;
 
 use std::io::Stdout;
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
 use structopt::StructOpt;
 use text_plotter::{Range, TextPlotter};
 use tokio::net::{TcpListener, TcpStream};
@@ -50,16 +49,14 @@ async fn launch_multiple_connections_server(
     listener: TcpListener,
     range: Range,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let tp = TextPlotter::new(opt.bar_capacity, range, std::io::stdout());
-    let tp = Arc::new(Mutex::new(tp));
-
     loop {
         let (socket, _) = listener.accept().await?;
-        let tp = tp.clone();
+        let range = range.clone();
+        let bar_capacity = opt.bar_capacity;
 
         tokio::spawn(async move {
             let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-
+            let tp = TextPlotter::new(bar_capacity, range, std::io::stdout());
             process_incoming_data(tp, server).await
         });
     }
@@ -70,24 +67,21 @@ async fn launch_single_connection_server(
     listener: TcpListener,
     range: Range,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let tp = TextPlotter::new(opt.bar_capacity, range, std::io::stdout());
-    let tp = Arc::new(Mutex::new(tp));
-
     loop {
         let (socket, _) = listener.accept().await?;
         let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-
-        process_incoming_data(tp.clone(), server).await
+        let tp = TextPlotter::new(opt.bar_capacity, range.clone(), std::io::stdout());
+        process_incoming_data(tp, server).await
     }
 }
 
 async fn process_incoming_data(
-    tp: Arc<Mutex<TextPlotter<Stdout>>>,
+    mut tp: TextPlotter<Stdout>,
     mut server: Framed<TcpStream, LinesCodec>,
 ) {
     while let Some(Ok(line)) = server.next().await {
         if let Ok(x) = line.parse() {
-            tp.lock().unwrap().update(x);
+            tp.update(x);
         }
     }
 }
