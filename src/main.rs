@@ -22,6 +22,9 @@ struct Opt {
 
     #[structopt(long, default_value = "127.0.0.1:9999")]
     bind: SocketAddr,
+
+    #[structopt(long)]
+    multiple_connections: bool,
 }
 
 #[tokio::main]
@@ -32,6 +35,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let range = Range::new(opt.min, opt.max);
     let output = std::io::stdout();
+
+    launch_multiple_connections_server(opt, listener, range, output).await
+}
+
+async fn launch_multiple_connections_server(
+    opt: Opt,
+    listener: TcpListener,
+    range: Range,
+    output: std::io::Stdout,
+) -> Result<(), Box<dyn std::error::Error>> {
     let tp = TextPlotter::new(opt.bar_capacity, range, output);
     let tp = Arc::new(Mutex::new(tp));
 
