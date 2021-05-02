@@ -474,8 +474,8 @@ dependencies = [
     "libc",
     "log",
     "miow",
- "ntapi",
- "winapi",
+    "ntapi",
+    "winapi",
 ]
 
 [[package]]
@@ -703,6 +703,7 @@ name = "popoplot"
 version = "0.4.0"
 dependencies = [
     "plotters",
+    "plotters-backend",
     "structopt",
     "tokio",
     "tokio-stream",
@@ -944,15 +945,15 @@ dependencies = [
     "autocfg",
     "bytes",
     "libc",
- "memchr",
- "mio",
- "num_cpus",
- "once_cell",
- "parking_lot",
- "pin-project-lite",
- "signal-hook-registry",
- "tokio-macros",
- "winapi",
+    "memchr",
+    "mio",
+    "num_cpus",
+    "once_cell",
+    "parking_lot",
+    "pin-project-lite",
+    "signal-hook-registry",
+    "tokio-macros",
+    "winapi",
 ]
 
 [[package]]

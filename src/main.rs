@@ -4,6 +4,7 @@ mod text_plotter;
 use std::io::Stdout;
 use std::net::SocketAddr;
 use structopt::StructOpt;
+use terminal_plotter::TerminalPlotter;
 use text_plotter::TextPlotter;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
@@ -69,7 +70,7 @@ async fn launch_multiple_connections_server(
 
         tokio::spawn(async move {
             let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-            let tp = TextPlotter::new(bar_capacity, range, std::io::stdout());
+            let tp = TerminalPlotter::new(bar_capacity, range);
             process_incoming_data(tp, server).await
         });
     }
@@ -83,15 +84,12 @@ async fn launch_single_connection_server(
     loop {
         let (socket, _) = listener.accept().await?;
         let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-        let tp = TextPlotter::new(opt.bar_capacity, range.clone(), std::io::stdout());
+        let tp = TerminalPlotter::new(opt.bar_capacity, range.clone());
         process_incoming_data(tp, server).await
     }
 }
 
-async fn process_incoming_data(
-    mut tp: TextPlotter<Stdout>,
-    mut server: Framed<TcpStream, LinesCodec>,
-) {
+async fn process_incoming_data(mut tp: TerminalPlotter, mut server: Framed<TcpStream, LinesCodec>) {
     while let Some(Ok(line)) = server.next().await {
         if let Ok(x) = line.parse() {
             tp.update(x);
