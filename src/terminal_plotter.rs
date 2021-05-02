@@ -20,6 +20,7 @@ impl TerminalPlotter {
     pub fn new(width: usize, range: Range) -> Self {
         let backend = TextDrawingBackend {
             state: vec![PixelState::Empty; 5000],
+            width: width as u32,
         };
         let drawing_area = backend.into_drawing_area();
         let drawing_area = Arc::new(Mutex::new(drawing_area));
@@ -113,13 +114,14 @@ impl PixelState {
 
 pub struct TextDrawingBackend {
     state: Vec<PixelState>,
+    width: u32,
 }
 
 impl DrawingBackend for TextDrawingBackend {
     type ErrorType = std::io::Error;
 
     fn get_size(&self) -> (u32, u32) {
-        (100, 30)
+        (self.width, 30)
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
@@ -127,10 +129,11 @@ impl DrawingBackend for TextDrawingBackend {
     }
 
     fn present(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
+        let w = self.width as usize;
         for r in 0..30 {
             let mut buf = String::new();
-            for c in 0..100 {
-                buf.push(self.state[r * 100 + c].to_char());
+            for c in 0..w {
+                buf.push(self.state[r * w + c].to_char());
             }
             println!("{}", buf);
         }
@@ -145,8 +148,9 @@ impl DrawingBackend for TextDrawingBackend {
         pos: (i32, i32),
         color: BackendColor,
     ) -> Result<(), DrawingErrorKind<std::io::Error>> {
+        let w = self.width as i32;
         if color.alpha > 0.3 {
-            self.state[(pos.1 * 100 + pos.0) as usize].update(PixelState::Pixel);
+            self.state[(pos.1 * w + pos.0) as usize].update(PixelState::Pixel);
         }
         Ok(())
     }
@@ -157,12 +161,13 @@ impl DrawingBackend for TextDrawingBackend {
         to: (i32, i32),
         style: &S,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let w = self.width as i32;
         if from.0 == to.0 {
             let x = from.0;
             let y0 = from.1.min(to.1);
             let y1 = from.1.max(to.1);
             for y in y0..y1 {
-                self.state[(y * 100 + x) as usize].update(PixelState::VLine);
+                self.state[(y * w + x) as usize].update(PixelState::VLine);
             }
             return Ok(());
         }
@@ -172,7 +177,7 @@ impl DrawingBackend for TextDrawingBackend {
             let x0 = from.0.min(to.0);
             let x1 = from.0.max(to.0);
             for x in x0..x1 {
-                self.state[(y * 100 + x) as usize].update(PixelState::HLine);
+                self.state[(y * w + x) as usize].update(PixelState::HLine);
             }
             return Ok(());
         }
@@ -198,7 +203,8 @@ impl DrawingBackend for TextDrawingBackend {
             VPos::Center => -height / 2,
             VPos::Bottom => -height,
         };
-        let offset = (pos.1 + dy).max(0) * 100 + (pos.0 + dx).max(0);
+        let w = self.width as i32;
+        let offset = (pos.1 + dy).max(0) * w + (pos.0 + dx).max(0);
         for (idx, chr) in (offset..).zip(text.chars()) {
             self.state[idx as usize].update(PixelState::Text(chr));
         }
