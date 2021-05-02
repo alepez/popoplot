@@ -18,7 +18,10 @@ pub struct TerminalPlotter {
 
 impl TerminalPlotter {
     pub fn new(width: usize, range: Range) -> Self {
-        let drawing_area = TextDrawingBackend(vec![PixelState::Empty; 5000]).into_drawing_area();
+        let backend = TextDrawingBackend {
+            state: vec![PixelState::Empty; 5000],
+        };
+        let drawing_area = backend.into_drawing_area();
         let drawing_area = Arc::new(Mutex::new(drawing_area));
         TerminalPlotter {
             width,
@@ -108,7 +111,9 @@ impl PixelState {
     }
 }
 
-pub struct TextDrawingBackend(Vec<PixelState>);
+pub struct TextDrawingBackend {
+    state: Vec<PixelState>,
+}
 
 impl DrawingBackend for TextDrawingBackend {
     type ErrorType = std::io::Error;
@@ -125,12 +130,12 @@ impl DrawingBackend for TextDrawingBackend {
         for r in 0..30 {
             let mut buf = String::new();
             for c in 0..100 {
-                buf.push(self.0[r * 100 + c].to_char());
+                buf.push(self.state[r * 100 + c].to_char());
             }
             println!("{}", buf);
         }
 
-        self.0.fill(PixelState::Empty);
+        self.state.fill(PixelState::Empty);
 
         Ok(())
     }
@@ -141,7 +146,7 @@ impl DrawingBackend for TextDrawingBackend {
         color: BackendColor,
     ) -> Result<(), DrawingErrorKind<std::io::Error>> {
         if color.alpha > 0.3 {
-            self.0[(pos.1 * 100 + pos.0) as usize].update(PixelState::Pixel);
+            self.state[(pos.1 * 100 + pos.0) as usize].update(PixelState::Pixel);
         }
         Ok(())
     }
@@ -157,7 +162,7 @@ impl DrawingBackend for TextDrawingBackend {
             let y0 = from.1.min(to.1);
             let y1 = from.1.max(to.1);
             for y in y0..y1 {
-                self.0[(y * 100 + x) as usize].update(PixelState::VLine);
+                self.state[(y * 100 + x) as usize].update(PixelState::VLine);
             }
             return Ok(());
         }
@@ -167,7 +172,7 @@ impl DrawingBackend for TextDrawingBackend {
             let x0 = from.0.min(to.0);
             let x1 = from.0.max(to.0);
             for x in x0..x1 {
-                self.0[(y * 100 + x) as usize].update(PixelState::HLine);
+                self.state[(y * 100 + x) as usize].update(PixelState::HLine);
             }
             return Ok(());
         }
@@ -195,7 +200,7 @@ impl DrawingBackend for TextDrawingBackend {
         };
         let offset = (pos.1 + dy).max(0) * 100 + (pos.0 + dx).max(0);
         for (idx, chr) in (offset..).zip(text.chars()) {
-            self.0[idx as usize].update(PixelState::Text(chr));
+            self.state[idx as usize].update(PixelState::Text(chr));
         }
         Ok(())
     }
