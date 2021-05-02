@@ -1,9 +1,10 @@
+mod terminal_plotter;
 mod text_plotter;
 
 use std::io::Stdout;
 use std::net::SocketAddr;
 use structopt::StructOpt;
-use text_plotter::{Range, TextPlotter};
+use text_plotter::TextPlotter;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LinesCodec};
@@ -25,6 +26,18 @@ struct Opt {
 
     #[structopt(long)]
     multiple_connections: bool,
+}
+
+#[derive(Clone)]
+pub struct Range {
+    min: f64,
+    max: f64,
+}
+
+impl Range {
+    pub fn new(min: f64, max: f64) -> Self {
+        Range { min, max }
+    }
 }
 
 #[tokio::main]

@@ -1,3 +1,5 @@
+use super::Range;
+
 fn calculate_bar_width(x: f64, min: f64, max: f64, bar_capacity: usize) -> usize {
     let y = ((x - min) / (max - min)) * (bar_capacity as f64);
     if y < 0.0 {
@@ -45,18 +47,6 @@ impl<Out: std::io::Write> TextPlotter<Out> {
                 .collect::<String>()
         };
         [bar, format!("{}", x)].join(" ")
-    }
-}
-
-#[derive(Clone)]
-pub struct Range {
-    min: f64,
-    max: f64,
-}
-
-impl Range {
-    pub fn new(min: f64, max: f64) -> Self {
-        Range { min, max }
     }
 }
 
