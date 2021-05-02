@@ -4,6 +4,7 @@ use plotters::style::text_anchor::{HPos, VPos};
 use plotters_backend::{
     BackendColor, BackendStyle, BackendTextStyle, DrawingBackend, DrawingErrorKind,
 };
+use std::collections::vec_deque::VecDeque;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 
@@ -14,6 +15,7 @@ pub struct TerminalPlotter {
     width: usize,
     range: Range,
     drawing_area: Arc<Mutex<DrawingArea<TextDrawingBackend, plotters::coord::Shift>>>,
+    series: VecDeque<(f64, f64)>,
 }
 
 impl TerminalPlotter {
@@ -24,14 +26,25 @@ impl TerminalPlotter {
         };
         let drawing_area = backend.into_drawing_area();
         let drawing_area = Arc::new(Mutex::new(drawing_area));
+        let series = VecDeque::new();
         TerminalPlotter {
             width,
             range,
             drawing_area,
+            series,
         }
     }
 
-    pub fn update(&mut self, x: f64) {
+    pub fn update(&mut self, y: f64) {
+        for (x, _) in self.series.iter_mut() {
+            *x = *x - 1.0;
+        }
+        self.series.push_back((0.0, y));
+
+        if (self.series.len() > self.width) {
+            self.series.pop_front();
+        }
+
         self.draw_chart();
     }
 
@@ -54,12 +67,9 @@ impl TerminalPlotter {
             .disable_y_mesh()
             .draw()?;
 
-        chart.draw_series(LineSeries::new(
-            (-314..314)
-                .map(|x| x as f64 / 100.0)
-                .map(|x| (x, (offset + x).cos())),
-            &RED,
-        ))?;
+        let series = self.series.clone();
+
+        chart.draw_series(LineSeries::new(series.into_iter(), &RED))?;
 
         drawing_area.present()?;
 
@@ -220,6 +230,7 @@ impl DrawingBackend for TextDrawingBackend {
     }
 }
 
+// FIXME Is this portable?
 fn clear_screen() {
     print!("\x1B[2J\x1B[1;1H");
 }
