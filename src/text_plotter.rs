@@ -1,3 +1,4 @@
+use super::PlotterOpt;
 use super::Range;
 
 fn calculate_bar_width(x: f64, min: f64, max: f64, bar_capacity: usize) -> usize {
@@ -17,10 +18,10 @@ pub struct TextPlotter<Out: std::io::Write> {
 }
 
 impl<Out: std::io::Write> TextPlotter<Out> {
-    pub fn new(bar_capacity: usize, range: Range, output: Out) -> Self {
+    pub(crate) fn new(opt: PlotterOpt, output: Out) -> Self {
         TextPlotter {
-            bar_capacity,
-            range,
+            bar_capacity: opt.width,
+            range: opt.range,
             output,
         }
     }
@@ -65,7 +66,8 @@ mod tests {
     fn text_plotter_test() {
         let range = Range::new(0.0, 10.0);
         let output = Vec::new();
-        let mut tp = TextPlotter::new(10, range, output);
+        let opt = PlotterOpt { width: 10, range };
+        let mut tp = TextPlotter::new(opt, output);
         tp.update(5.0);
         tp.update(2.0);
         assert_eq!(tp.output, b"=====..... 5\n==........ 2\n");

@@ -1,3 +1,4 @@
+use super::PlotterOpt;
 use super::Range;
 use plotters::prelude::*;
 use plotters::style::text_anchor::{HPos, VPos};
@@ -19,23 +20,23 @@ pub struct TerminalPlotter {
 }
 
 impl TerminalPlotter {
-    pub fn new(width: usize, range: Range) -> Self {
+    pub(crate) fn new(opt: PlotterOpt) -> Self {
         let backend = TextDrawingBackend {
             state: vec![PixelState::Empty; 5000],
-            width,
+            width: opt.width,
         };
         let drawing_area = backend.into_drawing_area();
         let drawing_area = Arc::new(Mutex::new(drawing_area));
         let series = VecDeque::new();
         TerminalPlotter {
-            width,
-            range,
+            width: opt.width,
+            range: opt.range,
             drawing_area,
             series,
         }
     }
 
-    pub fn update(&mut self, y: f64) {
+    pub(crate) fn update(&mut self, y: f64) {
         for (x, _) in self.series.iter_mut() {
             *x = *x - 1.0;
         }

@@ -27,8 +27,23 @@ struct Opt {
     multiple_connections: bool,
 }
 
-#[derive(Clone)]
-pub struct Range {
+#[derive(Clone, Copy)]
+struct PlotterOpt {
+    range: Range,
+    width: usize,
+}
+
+impl From<Opt> for PlotterOpt {
+    fn from(opt: Opt) -> Self {
+        Self {
+            range: Range::new(opt.min, opt.max),
+            width: opt.bar_capacity,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct Range {
     min: f64,
     max: f64,
 }
@@ -45,30 +60,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = TcpListener::bind(opt.bind).await?;
 
-    let range = Range::new(opt.min, opt.max);
-
     let mult_conn = opt.multiple_connections;
 
     if mult_conn {
-        launch_multiple_connections_server(opt, listener, range).await
+        launch_multiple_connections_server(opt, listener).await
     } else {
-        launch_single_connection_server(opt, listener, range).await
+        launch_single_connection_server(opt, listener).await
     }
 }
 
 async fn launch_multiple_connections_server(
     opt: Opt,
     listener: TcpListener,
-    range: Range,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let plotter_opt = opt.into();
     loop {
         let (socket, _) = listener.accept().await?;
-        let range = range.clone();
-        let bar_capacity = opt.bar_capacity;
 
         tokio::spawn(async move {
             let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-            let tp = TerminalPlotter::new(bar_capacity, range);
+            let tp = TerminalPlotter::new(plotter_opt);
             process_incoming_data(tp, server).await
         });
     }
@@ -77,12 +88,12 @@ async fn launch_multiple_connections_server(
 async fn launch_single_connection_server(
     opt: Opt,
     listener: TcpListener,
-    range: Range,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let plotter_opt = opt.into();
     loop {
         let (socket, _) = listener.accept().await?;
         let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-        let tp = TerminalPlotter::new(opt.bar_capacity, range.clone());
+        let tp = TerminalPlotter::new(plotter_opt);
         process_incoming_data(tp, server).await
     }
 }
