@@ -1,3 +1,4 @@
+use super::Plotter;
 use super::PlotterOpt;
 use super::Range;
 
@@ -10,6 +11,18 @@ fn calculate_bar_width(x: f64, min: f64, max: f64, bar_capacity: usize) -> usize
     }
 }
 
+pub type StdoutTextPlotter = TextPlotter<std::io::Stdout>;
+
+impl Plotter for StdoutTextPlotter {
+    fn new(opt: PlotterOpt) -> Self {
+        Self::new(opt, std::io::stdout())
+    }
+
+    fn update(&mut self, y: f64) {
+        self.update(y);
+    }
+}
+
 #[derive(Clone)]
 pub struct TextPlotter<Out: std::io::Write> {
     bar_capacity: usize,
@@ -18,7 +31,7 @@ pub struct TextPlotter<Out: std::io::Write> {
 }
 
 impl<Out: std::io::Write> TextPlotter<Out> {
-    pub(crate) fn new(opt: PlotterOpt, output: Out) -> Self {
+    fn new(opt: PlotterOpt, output: Out) -> Self {
         TextPlotter {
             bar_capacity: opt.width,
             range: opt.range,
@@ -26,7 +39,7 @@ impl<Out: std::io::Write> TextPlotter<Out> {
         }
     }
 
-    pub fn update(&mut self, x: f64) {
+    fn update(&mut self, x: f64) {
         let str = self.to_string(x);
         self.output.write(str.as_bytes()).unwrap();
         self.output.write(b"\n").unwrap();

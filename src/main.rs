@@ -105,3 +105,8 @@ async fn process_incoming_data(mut tp: TerminalPlotter, mut server: Framed<TcpSt
         }
     }
 }
+
+trait Plotter {
+    fn new(opt: PlotterOpt) -> Self;
+    fn update(&mut self, y: f64);
+}

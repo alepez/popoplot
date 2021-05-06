@@ -1,3 +1,4 @@
+use super::Plotter;
 use super::PlotterOpt;
 use super::Range;
 use plotters::prelude::*;
@@ -19,8 +20,8 @@ pub struct TerminalPlotter {
     series: VecDeque<(f64, f64)>,
 }
 
-impl TerminalPlotter {
-    pub(crate) fn new(opt: PlotterOpt) -> Self {
+impl Plotter for TerminalPlotter {
+    fn new(opt: PlotterOpt) -> Self {
         let backend = TextDrawingBackend {
             state: vec![PixelState::Empty; 5000],
             width: opt.width,
@@ -36,7 +37,7 @@ impl TerminalPlotter {
         }
     }
 
-    pub(crate) fn update(&mut self, y: f64) {
+    fn update(&mut self, y: f64) {
         for (x, _) in self.series.iter_mut() {
             *x = *x - 1.0;
         }
@@ -48,7 +49,9 @@ impl TerminalPlotter {
 
         self.draw_chart().unwrap();
     }
+}
 
+impl TerminalPlotter {
     fn draw_chart(&mut self) -> Result<(), Box<dyn Error>> {
         let drawing_area = self.drawing_area.lock().unwrap();
 
