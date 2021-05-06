@@ -22,7 +22,7 @@ impl TerminalPlotter {
     pub fn new(width: usize, range: Range) -> Self {
         let backend = TextDrawingBackend {
             state: vec![PixelState::Empty; 5000],
-            width: width as u32,
+            width,
         };
         let drawing_area = backend.into_drawing_area();
         let drawing_area = Arc::new(Mutex::new(drawing_area));
@@ -53,11 +53,16 @@ impl TerminalPlotter {
 
         clear_screen();
 
+        let x_range = (-(self.width as f64))..0f64;
+        let y_range = self.range.min..self.range.max;
+        let y_label_size = (5i32).percent_width();
+        let x_label_size = (10i32).percent_height();
+
         let mut chart = ChartBuilder::on(&drawing_area)
             .margin(1)
-            .set_label_area_size(LabelAreaPosition::Left, (5i32).percent_width())
-            .set_label_area_size(LabelAreaPosition::Bottom, (10i32).percent_height())
-            .build_cartesian_2d(-100f64..0f64, self.range.min..self.range.max)?;
+            .set_label_area_size(LabelAreaPosition::Left, y_label_size)
+            .set_label_area_size(LabelAreaPosition::Bottom, x_label_size)
+            .build_cartesian_2d(x_range, y_range)?;
 
         chart
             .configure_mesh()
@@ -122,14 +127,14 @@ impl PixelState {
 
 pub struct TextDrawingBackend {
     state: Vec<PixelState>,
-    width: u32,
+    width: usize,
 }
 
 impl DrawingBackend for TextDrawingBackend {
     type ErrorType = std::io::Error;
 
     fn get_size(&self) -> (u32, u32) {
-        (self.width, 30)
+        (self.width as u32, 30)
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
