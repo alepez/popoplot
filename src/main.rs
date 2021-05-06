@@ -10,15 +10,27 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LinesCodec};
 
-#[derive(Debug, enum_utils::FromStr, strum_macros::Display, Copy, Clone)]
+impl FromStr for PlotterType {
+    type Err = &'static str;
+
+    fn from_str(day: &str) -> Result<Self, Self::Err> {
+        match day {
+            "text" => Ok(PlotterType::Text),
+            "terminal" => Ok(PlotterType::Plotter),
+            _ => Err("Invalid plotter type"),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 enum PlotterType {
-    TextPlotter,
-    TerminalPlotter,
+    Text,
+    Plotter,
 }
 
 impl Default for PlotterType {
     fn default() -> Self {
-        PlotterType::TextPlotter
+        PlotterType::Text
     }
 }
 
@@ -40,14 +52,12 @@ struct Opt {
     #[structopt(long)]
     multiple_connections: bool,
 
-    // TODO Just use the enum instead of String
-    #[structopt(long, default_value = "TextPlotter")]
-    view: String,
+    #[structopt(long, default_value = "text")]
+    view: PlotterType,
 }
 
 #[derive(Clone, Copy)]
 struct PlotterOpt {
-    plotter_type: PlotterType,
     range: Range,
     width: usize,
 }
@@ -55,7 +65,6 @@ struct PlotterOpt {
 impl From<Opt> for PlotterOpt {
     fn from(opt: Opt) -> Self {
         Self {
-            plotter_type: PlotterType::from_str(&opt.view).unwrap_or_default(),
             range: Range::new(opt.min, opt.max),
             width: opt.bar_capacity,
         }
@@ -89,10 +98,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn make_plotter(opt: PlotterOpt) -> Box<dyn Plotter + Send> {
-    match opt.plotter_type {
-        PlotterType::TextPlotter => Box::new(StdoutTextPlotter::new(opt)),
-        PlotterType::TerminalPlotter => Box::new(TerminalPlotter::new(opt)),
+fn make_plotter(plotter_type: PlotterType, opt: PlotterOpt) -> Box<dyn Plotter + Send> {
+    match plotter_type {
+        PlotterType::Text => Box::new(StdoutTextPlotter::new(opt)),
+        PlotterType::Plotter => Box::new(TerminalPlotter::new(opt)),
     }
 }
 
@@ -100,13 +109,15 @@ async fn launch_multiple_connections_server(
     opt: Opt,
     listener: TcpListener,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let plotter_type = opt.view;
     let plotter_opt = opt.into();
+
     loop {
         let (socket, _) = listener.accept().await?;
 
         tokio::spawn(async move {
             let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-            let tp = make_plotter(plotter_opt);
+            let tp = make_plotter(plotter_type, plotter_opt);
             process_incoming_data(tp, server).await
         });
     }
@@ -116,11 +127,13 @@ async fn launch_single_connection_server(
     opt: Opt,
     listener: TcpListener,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let plotter_type = opt.view;
     let plotter_opt = opt.into();
+
     loop {
         let (socket, _) = listener.accept().await?;
         let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-        let tp = make_plotter(plotter_opt);
+        let tp = make_plotter(plotter_type, plotter_opt);
         process_incoming_data(tp, server).await
     }
 }
