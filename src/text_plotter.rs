@@ -2,8 +2,8 @@ use super::Plotter;
 use super::PlotterOpt;
 use super::Range;
 
-fn calculate_bar_width(x: f64, min: f64, max: f64, bar_capacity: usize) -> usize {
-    let y = ((x - min) / (max - min)) * (bar_capacity as f64);
+fn calculate_bar_width(x: f64, min: f64, max: f64, width: usize) -> usize {
+    let y = ((x - min) / (max - min)) * (width as f64);
     if y < 0.0 {
         0
     } else {
@@ -25,7 +25,7 @@ impl Plotter for StdoutTextPlotter {
 
 #[derive(Clone)]
 pub struct TextPlotter<Out: std::io::Write> {
-    bar_capacity: usize,
+    width: usize,
     range: Range,
     output: Out,
 }
@@ -33,7 +33,7 @@ pub struct TextPlotter<Out: std::io::Write> {
 impl<Out: std::io::Write> TextPlotter<Out> {
     fn new(opt: PlotterOpt, output: Out) -> Self {
         TextPlotter {
-            bar_capacity: opt.width,
+            width: opt.width,
             range: opt.range,
             output,
         }
@@ -46,15 +46,13 @@ impl<Out: std::io::Write> TextPlotter<Out> {
     }
 
     fn to_string(&self, x: f64) -> String {
-        let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.bar_capacity);
-        let overflow = bar_width > self.bar_capacity;
+        let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.width);
+        let overflow = bar_width > self.width;
         let bar = if overflow {
             // TODO Show overflow icon
-            std::iter::repeat("=")
-                .take(self.bar_capacity)
-                .collect::<String>()
+            std::iter::repeat("=").take(self.width).collect::<String>()
         } else {
-            let padding_width = self.bar_capacity - bar_width;
+            let padding_width = self.width - bar_width;
             std::iter::repeat("=")
                 .take(bar_width)
                 .chain(std::iter::repeat(".").take(padding_width))

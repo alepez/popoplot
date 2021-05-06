@@ -16,7 +16,7 @@ impl FromStr for PlotterType {
     fn from_str(day: &str) -> Result<Self, Self::Err> {
         match day {
             "text" => Ok(PlotterType::Text),
-            "terminal" => Ok(PlotterType::Plotter),
+            "tui" => Ok(PlotterType::Plotter),
             _ => Err("Invalid plotter type"),
         }
     }
@@ -44,7 +44,7 @@ struct Opt {
     max: f64,
 
     #[structopt(long, default_value = "100")]
-    bar_capacity: usize,
+    width: usize,
 
     #[structopt(long, default_value = "127.0.0.1:9999")]
     bind: SocketAddr,
@@ -66,7 +66,7 @@ impl From<Opt> for PlotterOpt {
     fn from(opt: Opt) -> Self {
         Self {
             range: Range::new(opt.min, opt.max),
-            width: opt.bar_capacity,
+            width: opt.width,
         }
     }
 }
