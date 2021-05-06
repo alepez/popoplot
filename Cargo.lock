@@ -30,9 +30,9 @@ version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
 dependencies = [
-    "hermit-abi",
-    "libc",
-    "winapi",
+ "hermit-abi",
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -228,10 +228,10 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "439a1c2ba5611ad3ed731280541d36d2e9c4ac5e7fb818a27b604bdc5a6aa65b"
 dependencies = [
-    "lazy_static",
-    "libc",
-    "winapi",
-    "wio",
+ "lazy_static",
+ "libc",
+ "winapi",
+ "wio",
 ]
 
 [[package]]
@@ -240,8 +240,8 @@ version = "2.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "658f19728920138342f68408b7cf7644d90d4784353d8ebc32e7e8663dbe45fa"
 dependencies = [
-    "cmake",
-    "pkg-config",
+ "cmake",
+ "pkg-config",
 ]
 
 [[package]]
@@ -329,8 +329,8 @@ version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
 dependencies = [
-    "color_quant",
-    "lzw",
+ "color_quant",
+ "lzw",
 ]
 
 [[package]]
@@ -339,7 +339,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87cbf45460356b7deeb5e3415b5563308c0a9b057c85e12b06ad551f98d0a6ac"
 dependencies = [
-    "unicode-segmentation",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -462,7 +462,7 @@ version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "791daaae1ed6889560f8c4359194f56648355540573244a5448a83ba1ecc7435"
 dependencies = [
-    "adler32",
+ "adler32",
 ]
 
 [[package]]
@@ -471,11 +471,11 @@ version = "0.7.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf80d3e903b34e0bd7282b218398aec54e082c840d9baf8339e0080a0c542956"
 dependencies = [
-    "libc",
-    "log",
-    "miow",
-    "ntapi",
-    "winapi",
+ "libc",
+ "log",
+ "miow",
+ "ntapi",
+ "winapi",
 ]
 
 [[package]]
@@ -554,8 +554,8 @@ version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
 dependencies = [
-    "hermit-abi",
-    "libc",
+ "hermit-abi",
+ "libc",
 ]
 
 [[package]]
@@ -692,22 +692,22 @@ version = "0.16.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c3287920cb847dee3de33d301c463fba14dda99db24214ddf93f83d3021f4c6"
 dependencies = [
-    "bitflags",
-    "crc32fast",
-    "deflate 0.8.6",
-    "miniz_oxide",
+ "bitflags",
+ "crc32fast",
+ "deflate 0.8.6",
+ "miniz_oxide",
 ]
 
 [[package]]
 name = "popoplot"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
-    "plotters",
-    "plotters-backend",
-    "structopt",
-    "tokio",
-    "tokio-stream",
-    "tokio-util",
+ "plotters",
+ "plotters-backend",
+ "structopt",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
 ]
 
 [[package]]
@@ -767,8 +767,8 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
 dependencies = [
-    "getrandom",
-    "redox_syscall",
+ "getrandom",
+ "redox_syscall",
 ]
 
 [[package]]
@@ -777,7 +777,7 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 dependencies = [
-    "semver",
+ "semver",
 ]
 
 [[package]]
@@ -812,7 +812,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 dependencies = [
-    "semver-parser",
+ "semver-parser",
 ]
 
 [[package]]
@@ -827,8 +827,8 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a088f8d775a5c5314aae09bd77340bc9c67d72b9a45258be34c83548b4814cd9"
 dependencies = [
-    "libc",
-    "servo-fontconfig-sys",
+ "libc",
+ "servo-fontconfig-sys",
 ]
 
 [[package]]
@@ -899,11 +899,11 @@ version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ba9cdfda491b814720b6b06e0cac513d922fc407582032e8706e9f137976f90"
 dependencies = [
-    "heck",
-    "proc-macro-error",
-    "proc-macro2",
-    "quote",
-    "syn",
+ "heck",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -912,9 +912,9 @@ version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9505f307c872bab8eb46f77ae357c8eba1fdacead58ee5a850116b1d7f82883"
 dependencies = [
-    "proc-macro2",
-    "quote",
-    "unicode-xid",
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
 ]
 
 [[package]]
