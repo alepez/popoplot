@@ -2,11 +2,25 @@ mod terminal_plotter;
 mod text_plotter;
 
 use std::net::SocketAddr;
+use std::str::FromStr;
 use structopt::StructOpt;
 use terminal_plotter::TerminalPlotter;
+use text_plotter::StdoutTextPlotter;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LinesCodec};
+
+#[derive(Debug, enum_utils::FromStr, strum_macros::Display, Copy, Clone)]
+enum PlotterType {
+    TextPlotter,
+    TerminalPlotter,
+}
+
+impl Default for PlotterType {
+    fn default() -> Self {
+        PlotterType::TextPlotter
+    }
+}
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -25,10 +39,15 @@ struct Opt {
 
     #[structopt(long)]
     multiple_connections: bool,
+
+    // TODO Just use the enum instead of String
+    #[structopt(long, default_value = "TextPlotter")]
+    view: String,
 }
 
 #[derive(Clone, Copy)]
 struct PlotterOpt {
+    plotter_type: PlotterType,
     range: Range,
     width: usize,
 }
@@ -36,6 +55,7 @@ struct PlotterOpt {
 impl From<Opt> for PlotterOpt {
     fn from(opt: Opt) -> Self {
         Self {
+            plotter_type: PlotterType::from_str(&opt.view).unwrap_or_default(),
             range: Range::new(opt.min, opt.max),
             width: opt.bar_capacity,
         }
@@ -69,6 +89,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
+fn make_plotter(opt: PlotterOpt) -> Box<dyn Plotter + Send> {
+    match opt.plotter_type {
+        PlotterType::TextPlotter => Box::new(StdoutTextPlotter::new(opt)),
+        PlotterType::TerminalPlotter => Box::new(TerminalPlotter::new(opt)),
+    }
+}
+
 async fn launch_multiple_connections_server(
     opt: Opt,
     listener: TcpListener,
@@ -79,8 +106,8 @@ async fn launch_multiple_connections_server(
 
         tokio::spawn(async move {
             let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-            let tp = TerminalPlotter::new(plotter_opt);
-            process_incoming_data(Box::new(tp), server).await
+            let tp = make_plotter(plotter_opt);
+            process_incoming_data(tp, server).await
         });
     }
 }
@@ -93,8 +120,8 @@ async fn launch_single_connection_server(
     loop {
         let (socket, _) = listener.accept().await?;
         let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-        let tp = TerminalPlotter::new(plotter_opt);
-        process_incoming_data(Box::new(tp), server).await
+        let tp = make_plotter(plotter_opt);
+        process_incoming_data(tp, server).await
     }
 }
 

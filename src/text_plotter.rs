@@ -67,6 +67,7 @@ impl<Out: std::io::Write> TextPlotter<Out> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::PlotterType;
 
     #[test]
     fn calculate_bar_width_test() {
@@ -79,7 +80,11 @@ mod tests {
     fn text_plotter_test() {
         let range = Range::new(0.0, 10.0);
         let output = Vec::new();
-        let opt = PlotterOpt { width: 10, range };
+        let opt = PlotterOpt {
+            width: 10,
+            range,
+            plotter_type: PlotterType::TextPlotter,
+        };
         let mut tp = TextPlotter::new(opt, output);
         tp.update(5.0);
         tp.update(2.0);
