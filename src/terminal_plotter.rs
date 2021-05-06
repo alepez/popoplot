@@ -41,16 +41,14 @@ impl TerminalPlotter {
         }
         self.series.push_back((0.0, y));
 
-        if (self.series.len() > self.width) {
+        if self.series.len() > self.width {
             self.series.pop_front();
         }
 
-        self.draw_chart();
+        self.draw_chart().unwrap();
     }
 
     fn draw_chart(&mut self) -> Result<(), Box<dyn Error>> {
-        let mut offset: f64 = 0.0;
-
         let drawing_area = self.drawing_area.lock().unwrap();
 
         clear_screen();

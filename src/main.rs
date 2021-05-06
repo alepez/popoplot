@@ -1,11 +1,9 @@
 mod terminal_plotter;
 mod text_plotter;
 
-use std::io::Stdout;
 use std::net::SocketAddr;
 use structopt::StructOpt;
 use terminal_plotter::TerminalPlotter;
-use text_plotter::TextPlotter;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LinesCodec};
