@@ -80,7 +80,7 @@ async fn launch_multiple_connections_server(
         tokio::spawn(async move {
             let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
             let tp = TerminalPlotter::new(plotter_opt);
-            process_incoming_data(tp, server).await
+            process_incoming_data(Box::new(tp), server).await
         });
     }
 }
@@ -94,11 +94,14 @@ async fn launch_single_connection_server(
         let (socket, _) = listener.accept().await?;
         let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
         let tp = TerminalPlotter::new(plotter_opt);
-        process_incoming_data(tp, server).await
+        process_incoming_data(Box::new(tp), server).await
     }
 }
 
-async fn process_incoming_data(mut tp: TerminalPlotter, mut server: Framed<TcpStream, LinesCodec>) {
+async fn process_incoming_data(
+    mut tp: Box<dyn Plotter + Send>,
+    mut server: Framed<TcpStream, LinesCodec>,
+) {
     while let Some(Ok(line)) = server.next().await {
         if let Ok(x) = line.parse() {
             tp.update(x);
@@ -107,6 +110,8 @@ async fn process_incoming_data(mut tp: TerminalPlotter, mut server: Framed<TcpSt
 }
 
 trait Plotter {
-    fn new(opt: PlotterOpt) -> Self;
+    fn new(opt: PlotterOpt) -> Self
+    where
+        Self: Sized;
     fn update(&mut self, y: f64);
 }
