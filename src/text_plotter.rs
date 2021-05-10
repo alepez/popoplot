@@ -15,10 +15,6 @@ fn calculate_bar_width(x: f64, min: f64, max: f64, width: usize) -> usize {
 pub type StdoutTextPlotter = TextPlotter<std::io::Stdout>;
 
 impl Plotter for StdoutTextPlotter {
-    fn new(opt: PlotterOpt) -> Self {
-        Self::new(opt, std::io::stdout())
-    }
-
     fn update(&mut self, y: f64) {
         self.update(y);
     }

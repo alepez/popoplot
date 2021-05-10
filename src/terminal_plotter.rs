@@ -1,6 +1,5 @@
 use super::Plotter;
 use super::PlotterOpt;
-use super::Range;
 use crate::MultiPlotter;
 use plotters::prelude::*;
 use plotters::style::text_anchor::{HPos, VPos};
@@ -14,74 +13,50 @@ use std::sync::{Arc, Mutex};
 // FIXME Is this valid?
 unsafe impl Send for TerminalPlotter {}
 
+struct Series(VecDeque<(f64, f64)>);
+
 pub struct TerminalPlotter {
     width: usize,
-    range: Range,
-    drawing_area: Arc<Mutex<DrawingArea<TextDrawingBackend, plotters::coord::Shift>>>,
-    series: VecDeque<(f64, f64)>,
+    series: Arc<Mutex<Series>>,
+    common: Arc<Mutex<CommonPlotter>>,
 }
 
 impl Plotter for TerminalPlotter {
-    fn new(opt: PlotterOpt) -> Self {
-        let backend = TextDrawingBackend {
-            state: vec![PixelState::Empty; 5000],
-            width: opt.width,
-        };
-        let drawing_area = backend.into_drawing_area();
-        let drawing_area = Arc::new(Mutex::new(drawing_area));
-        let series = VecDeque::new();
-        TerminalPlotter {
-            width: opt.width,
-            range: opt.range,
-            drawing_area,
-            series,
-        }
-    }
-
     fn update(&mut self, y: f64) {
-        for (x, _) in self.series.iter_mut() {
-            *x = *x - 1.0;
-        }
-        self.series.push_back((0.0, y));
+        {
+            let series = &mut self.series.lock().unwrap().0;
 
-        if self.series.len() > self.width {
-            self.series.pop_front();
+            for (x, _) in series.iter_mut() {
+                *x = *x - 1.0;
+            }
+            series.push_back((0.0, y));
+
+            if series.len() > self.width {
+                series.pop_front();
+            }
         }
 
-        self.draw_chart().unwrap();
+        {
+            self.common.lock().unwrap().draw_chart().unwrap();
+        }
     }
 }
 
 impl TerminalPlotter {
-    fn draw_chart(&mut self) -> Result<(), Box<dyn Error>> {
-        let drawing_area = self.drawing_area.lock().unwrap();
+    fn new(common: Arc<Mutex<CommonPlotter>>) -> Self {
+        let width = common.lock().unwrap().opt.width;
+        let series = Series(VecDeque::new());
+        let series = Arc::new(Mutex::new(series));
 
-        clear_screen();
+        TerminalPlotter {
+            width,
+            series,
+            common,
+        }
+    }
 
-        let x_range = (-(self.width as f64))..0f64;
-        let y_range = self.range.min..self.range.max;
-        let y_label_size = (5i32).percent_width();
-        let x_label_size = (10i32).percent_height();
-
-        let mut chart = ChartBuilder::on(&drawing_area)
-            .margin(1)
-            .set_label_area_size(LabelAreaPosition::Left, y_label_size)
-            .set_label_area_size(LabelAreaPosition::Bottom, x_label_size)
-            .build_cartesian_2d(x_range, y_range)?;
-
-        chart
-            .configure_mesh()
-            .disable_x_mesh()
-            .disable_y_mesh()
-            .draw()?;
-
-        let series = self.series.clone();
-
-        chart.draw_series(LineSeries::new(series.into_iter(), &RED))?;
-
-        drawing_area.present()?;
-
-        Ok(())
+    fn get_series(&self) -> Arc<Mutex<Series>> {
+        self.series.clone()
     }
 }
 
@@ -244,7 +219,13 @@ fn clear_screen() {
 }
 
 pub(crate) struct TerminalMultiPlotter {
+    common: Arc<Mutex<CommonPlotter>>,
+}
+
+struct CommonPlotter {
     opt: PlotterOpt,
+    children: Vec<Arc<Mutex<Series>>>,
+    drawing_area: DrawingArea<TextDrawingBackend, plotters::coord::Shift>,
 }
 
 impl MultiPlotter for TerminalMultiPlotter {
@@ -252,10 +233,70 @@ impl MultiPlotter for TerminalMultiPlotter {
     where
         Self: Sized,
     {
-        TerminalMultiPlotter { opt }
+        let backend = TextDrawingBackend {
+            state: vec![PixelState::Empty; 5000],
+            width: opt.width,
+        };
+        let drawing_area = backend.into_drawing_area();
+
+        let common = CommonPlotter {
+            opt,
+            drawing_area,
+            children: Vec::default(),
+        };
+
+        let common = Arc::new(Mutex::new(common));
+
+        TerminalMultiPlotter { common }
     }
 
     fn spawn(&mut self) -> Box<dyn Plotter + Send> {
-        Box::new(TerminalPlotter::new(self.opt))
+        let common = self.common.clone();
+        let plotter = TerminalPlotter::new(common);
+
+        self.common
+            .lock()
+            .unwrap()
+            .children
+            .push(plotter.get_series());
+
+        Box::new(plotter)
+    }
+}
+
+impl CommonPlotter {
+    fn draw_chart(&mut self) -> Result<(), Box<dyn Error>> {
+        let drawing_area = &mut self.drawing_area;
+
+        clear_screen();
+
+        let width = self.opt.width;
+        let range = self.opt.range;
+
+        let x_range = (-(width as f64))..0f64;
+        let y_range = range.min..range.max;
+        let y_label_size = (5i32).percent_width();
+        let x_label_size = (10i32).percent_height();
+
+        let mut chart = ChartBuilder::on(drawing_area)
+            .margin(1)
+            .set_label_area_size(LabelAreaPosition::Left, y_label_size)
+            .set_label_area_size(LabelAreaPosition::Bottom, x_label_size)
+            .build_cartesian_2d(x_range, y_range)?;
+
+        chart
+            .configure_mesh()
+            .disable_x_mesh()
+            .disable_y_mesh()
+            .draw()?;
+
+        for series in &self.children {
+            let series = series.lock().unwrap().0.clone();
+            chart.draw_series(LineSeries::new(series.into_iter(), &RED))?;
+        }
+
+        drawing_area.present()?;
+
+        Ok(())
     }
 }
