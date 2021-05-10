@@ -1,6 +1,7 @@
 use super::Plotter;
 use super::PlotterOpt;
 use super::Range;
+use crate::MultiPlotter;
 
 fn calculate_bar_width(x: f64, min: f64, max: f64, width: usize) -> usize {
     let y = ((x - min) / (max - min)) * (width as f64);
@@ -59,6 +60,23 @@ impl<Out: std::io::Write> TextPlotter<Out> {
                 .collect::<String>()
         };
         [bar, format!("{}", x)].join(" ")
+    }
+}
+
+pub(crate) struct StdoutTextMultiPlotter {
+    opt: PlotterOpt,
+}
+
+impl MultiPlotter for StdoutTextMultiPlotter {
+    fn new(opt: PlotterOpt) -> Self
+    where
+        Self: Sized,
+    {
+        StdoutTextMultiPlotter { opt }
+    }
+
+    fn spawn(&mut self) -> Box<dyn Plotter + Send> {
+        Box::new(StdoutTextPlotter::new(self.opt, std::io::stdout()))
     }
 }
 

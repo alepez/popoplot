@@ -1,6 +1,7 @@
 use super::Plotter;
 use super::PlotterOpt;
 use super::Range;
+use crate::MultiPlotter;
 use plotters::prelude::*;
 use plotters::style::text_anchor::{HPos, VPos};
 use plotters_backend::{
@@ -240,4 +241,21 @@ impl DrawingBackend for TextDrawingBackend {
 // FIXME Is this portable?
 fn clear_screen() {
     print!("\x1B[2J\x1B[1;1H");
+}
+
+pub(crate) struct TerminalMultiPlotter {
+    opt: PlotterOpt,
+}
+
+impl MultiPlotter for TerminalMultiPlotter {
+    fn new(opt: PlotterOpt) -> Self
+    where
+        Self: Sized,
+    {
+        TerminalMultiPlotter { opt }
+    }
+
+    fn spawn(&mut self) -> Box<dyn Plotter + Send> {
+        Box::new(TerminalPlotter::new(self.opt))
+    }
 }

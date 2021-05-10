@@ -3,9 +3,10 @@ mod text_plotter;
 
 use std::net::SocketAddr;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use structopt::StructOpt;
-use terminal_plotter::TerminalPlotter;
-use text_plotter::StdoutTextPlotter;
+use terminal_plotter::TerminalMultiPlotter;
+use text_plotter::StdoutTextMultiPlotter;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LinesCodec};
@@ -98,10 +99,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn make_plotter(plotter_type: PlotterType, opt: PlotterOpt) -> Box<dyn Plotter + Send> {
+fn make_multi_plotter(plotter_type: PlotterType, opt: PlotterOpt) -> Box<dyn MultiPlotter + Send> {
     match plotter_type {
-        PlotterType::Text => Box::new(StdoutTextPlotter::new(opt)),
-        PlotterType::Plotter => Box::new(TerminalPlotter::new(opt)),
+        PlotterType::Text => Box::new(StdoutTextMultiPlotter::new(opt)),
+        PlotterType::Plotter => Box::new(TerminalMultiPlotter::new(opt)),
     }
 }
 
@@ -111,13 +112,16 @@ async fn launch_multiple_connections_server(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let plotter_type = opt.view;
     let plotter_opt = opt.into();
+    let multi_plotter = make_multi_plotter(plotter_type, plotter_opt);
+    let multi_plotter = Arc::new(Mutex::new(multi_plotter));
 
     loop {
+        let multi_plotter = multi_plotter.clone();
         let (socket, _) = listener.accept().await?;
 
         tokio::spawn(async move {
             let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-            let tp = make_plotter(plotter_type, plotter_opt);
+            let tp = multi_plotter.lock().unwrap().spawn();
             process_incoming_data(tp, server).await
         });
     }
@@ -129,11 +133,12 @@ async fn launch_single_connection_server(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let plotter_type = opt.view;
     let plotter_opt = opt.into();
+    let mut multi_plotter = make_multi_plotter(plotter_type, plotter_opt);
 
     loop {
         let (socket, _) = listener.accept().await?;
         let server = Framed::new(socket, LinesCodec::new_with_max_length(1024));
-        let tp = make_plotter(plotter_type, plotter_opt);
+        let tp = multi_plotter.spawn();
         process_incoming_data(tp, server).await
     }
 }
@@ -154,4 +159,12 @@ trait Plotter {
     where
         Self: Sized;
     fn update(&mut self, y: f64);
+}
+
+trait MultiPlotter {
+    fn new(opt: PlotterOpt) -> Self
+    where
+        Self: Sized;
+
+    fn spawn(&mut self) -> Box<dyn Plotter + Send>;
 }
