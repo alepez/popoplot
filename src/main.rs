@@ -17,7 +17,7 @@ impl FromStr for PlotterType {
     fn from_str(day: &str) -> Result<Self, Self::Err> {
         match day {
             "text" => Ok(PlotterType::Text),
-            "tui" => Ok(PlotterType::Plotter),
+            "tui" => Ok(PlotterType::Terminal),
             _ => Err("Invalid plotter type"),
         }
     }
@@ -26,7 +26,7 @@ impl FromStr for PlotterType {
 #[derive(Debug, Copy, Clone)]
 enum PlotterType {
     Text,
-    Plotter,
+    Terminal,
 }
 
 impl Default for PlotterType {
@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn make_multi_plotter(plotter_type: PlotterType, opt: PlotterOpt) -> Box<dyn MultiPlotter + Send> {
     match plotter_type {
         PlotterType::Text => Box::new(StdoutTextMultiPlotter::new(opt)),
-        PlotterType::Plotter => Box::new(TerminalMultiPlotter::new(opt)),
+        PlotterType::Terminal => Box::new(TerminalMultiPlotter::new(opt)),
     }
 }
 
