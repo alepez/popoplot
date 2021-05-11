@@ -43,24 +43,25 @@ impl<Out: std::io::Write> TextPlotter<Out> {
     }
 
     fn to_string(&self, x: f64) -> String {
+        use std::iter::{once, repeat};
+
         let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.width);
         let overflow = bar_width > self.width;
 
         let bar = if overflow {
-            // TODO Show overflow icon
             std::iter::repeat("[")
                 .take(1)
-                .chain(std::iter::repeat("#").take(self.width - 1))
-                .chain(std::iter::repeat("X").take(1))
-                .chain(std::iter::repeat("]").take(1))
+                .chain(repeat("#").take(self.width - 1))
+                .chain(once("X"))
+                .chain(once("]"))
                 .collect::<String>()
         } else {
             let padding_width = self.width - bar_width;
-            std::iter::repeat("[")
+            repeat("[")
                 .take(1)
-                .chain(std::iter::repeat("#").take(bar_width))
-                .chain(std::iter::repeat(" ").take(padding_width))
-                .chain(std::iter::repeat("]").take(1))
+                .chain(repeat("#").take(bar_width))
+                .chain(repeat(" ").take(padding_width))
+                .chain(once("]"))
                 .collect::<String>()
         };
 
