@@ -8,55 +8,41 @@ use plotters_backend::{
 };
 use std::collections::vec_deque::VecDeque;
 use std::error::Error;
-use std::sync::{Arc, Mutex};
+
+type Sender = tokio::sync::mpsc::UnboundedSender<HistoryRecord>;
 
 // FIXME Is this valid?
 unsafe impl Send for TerminalPlotter {}
 
-struct Series(VecDeque<(f64, f64)>);
+#[derive(Default)]
+struct History(VecDeque<Record>);
+
+type Record = (f64, f64);
+
+struct HistoryRecord {
+    history_id: usize,
+    record: Record,
+}
 
 pub struct TerminalPlotter {
-    width: usize,
-    series: Arc<Mutex<Series>>,
-    common: Arc<Mutex<CommonPlotter>>,
+    history_id: usize,
+    tx: Sender,
 }
 
 impl Plotter for TerminalPlotter {
     fn update(&mut self, y: f64) {
-        {
-            let series = &mut self.series.lock().unwrap().0;
-
-            for (x, _) in series.iter_mut() {
-                *x = *x - 1.0;
-            }
-            series.push_back((0.0, y));
-
-            if series.len() > self.width {
-                series.pop_front();
-            }
-        }
-
-        {
-            self.common.lock().unwrap().draw_chart().unwrap();
-        }
+        let record = (0.0, y);
+        let hr = HistoryRecord {
+            record,
+            history_id: self.history_id,
+        };
+        self.tx.send(hr);
     }
 }
 
 impl TerminalPlotter {
-    fn new(common: Arc<Mutex<CommonPlotter>>) -> Self {
-        let width = common.lock().unwrap().opt.width;
-        let series = Series(VecDeque::new());
-        let series = Arc::new(Mutex::new(series));
-
-        TerminalPlotter {
-            width,
-            series,
-            common,
-        }
-    }
-
-    fn get_series(&self) -> Arc<Mutex<Series>> {
-        self.series.clone()
+    fn new(tx: Sender, history_id: usize) -> Self {
+        TerminalPlotter { tx, history_id }
     }
 }
 
@@ -219,13 +205,15 @@ fn clear_screen() {
 }
 
 pub(crate) struct TerminalMultiPlotter {
-    common: Arc<Mutex<CommonPlotter>>,
+    tx: Sender,
+    children_count: usize,
+    _thread: std::thread::JoinHandle<()>,
 }
 
-struct CommonPlotter {
+struct Worker {
     opt: PlotterOpt,
-    children: Vec<Arc<Mutex<Series>>>,
     drawing_area: DrawingArea<TextDrawingBackend, plotters::coord::Shift>,
+    histories: Vec<History>,
 }
 
 impl MultiPlotter for TerminalMultiPlotter {
@@ -233,38 +221,45 @@ impl MultiPlotter for TerminalMultiPlotter {
     where
         Self: Sized,
     {
-        let backend = TextDrawingBackend {
-            state: vec![PixelState::Empty; 5000],
-            width: opt.width,
-        };
-        let drawing_area = backend.into_drawing_area();
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
-        let common = CommonPlotter {
-            opt,
-            drawing_area,
-            children: Vec::default(),
-        };
+        let thread = std::thread::spawn(move || loop {
+            let backend = TextDrawingBackend {
+                state: vec![PixelState::Empty; 5000],
+                width: opt.width,
+            };
 
-        let common = Arc::new(Mutex::new(common));
+            let drawing_area = backend.into_drawing_area();
 
-        TerminalMultiPlotter { common }
+            let mut worker = Worker {
+                opt,
+                drawing_area,
+                histories: Vec::default(),
+            };
+
+            while let Some(hr) = rx.blocking_recv() {
+                worker.update_history(hr);
+            }
+        });
+
+        TerminalMultiPlotter {
+            tx,
+            children_count: 0,
+            _thread: thread,
+        }
     }
 
     fn spawn(&mut self) -> Box<dyn Plotter + Send> {
-        let common = self.common.clone();
-        let plotter = TerminalPlotter::new(common);
-
-        self.common
-            .lock()
-            .unwrap()
-            .children
-            .push(plotter.get_series());
+        let tx = self.tx.clone();
+        self.children_count += 1;
+        let history_id = self.children_count;
+        let plotter = TerminalPlotter::new(tx, history_id);
 
         Box::new(plotter)
     }
 }
 
-impl CommonPlotter {
+impl Worker {
     fn draw_chart(&mut self) -> Result<(), Box<dyn Error>> {
         let drawing_area = &mut self.drawing_area;
 
@@ -290,13 +285,37 @@ impl CommonPlotter {
             .disable_y_mesh()
             .draw()?;
 
-        for series in &self.children {
-            let series = series.lock().unwrap().0.clone();
-            chart.draw_series(LineSeries::new(series.into_iter(), &RED))?;
+        for history in &self.histories {
+            let history = history.0.clone();
+            chart.draw_series(LineSeries::new(history.into_iter(), &RED))?;
         }
 
         drawing_area.present()?;
 
         Ok(())
+    }
+
+    fn update_history(&mut self, hr: HistoryRecord) {
+        let HistoryRecord { history_id, record } = hr;
+
+        if history_id >= self.histories.len() {
+            self.histories.push(History::default());
+        }
+
+        if let Some(history) = self.histories.get_mut(history_id) {
+            let history = &mut history.0;
+
+            history.push_back(record);
+
+            for (x, _) in history.iter_mut() {
+                *x = *x - 1.0;
+            }
+
+            if history.len() > self.opt.width {
+                history.pop_front();
+            }
+
+            self.draw_chart().unwrap();
+        }
     }
 }
