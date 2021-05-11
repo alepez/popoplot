@@ -45,20 +45,23 @@ impl<Out: std::io::Write> TextPlotter<Out> {
     fn to_string(&self, x: f64) -> String {
         use std::iter::{once, repeat};
 
-        let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.width);
-        let overflow = bar_width > self.width;
+        let above_max = x > self.range.max;
+        let below_min = x < self.range.min;
 
-        let bar = if overflow {
-            std::iter::repeat("[")
-                .take(1)
-                .chain(repeat("#").take(self.width - 1))
+        let bar = if above_max {
+            once("[")
+                .chain(repeat("#").take(self.width))
                 .chain(once("X"))
+                .collect::<String>()
+        } else if below_min {
+            once("X")
+                .chain(repeat(" ").take(self.width))
                 .chain(once("]"))
                 .collect::<String>()
         } else {
+            let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.width);
             let padding_width = self.width - bar_width;
-            repeat("[")
-                .take(1)
+            once("[")
                 .chain(repeat("#").take(bar_width))
                 .chain(repeat(" ").take(padding_width))
                 .chain(once("]"))
