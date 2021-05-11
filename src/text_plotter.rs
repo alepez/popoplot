@@ -45,16 +45,25 @@ impl<Out: std::io::Write> TextPlotter<Out> {
     fn to_string(&self, x: f64) -> String {
         let bar_width = calculate_bar_width(x, self.range.min, self.range.max, self.width);
         let overflow = bar_width > self.width;
+
         let bar = if overflow {
             // TODO Show overflow icon
-            std::iter::repeat("=").take(self.width).collect::<String>()
+            std::iter::repeat("[")
+                .take(1)
+                .chain(std::iter::repeat("#").take(self.width - 1))
+                .chain(std::iter::repeat("X").take(1))
+                .chain(std::iter::repeat("]").take(1))
+                .collect::<String>()
         } else {
             let padding_width = self.width - bar_width;
-            std::iter::repeat("=")
-                .take(bar_width)
-                .chain(std::iter::repeat(".").take(padding_width))
+            std::iter::repeat("[")
+                .take(1)
+                .chain(std::iter::repeat("#").take(bar_width))
+                .chain(std::iter::repeat(" ").take(padding_width))
+                .chain(std::iter::repeat("]").take(1))
                 .collect::<String>()
         };
+
         [bar, format!("{}", x)].join(" ")
     }
 }
@@ -95,6 +104,6 @@ mod tests {
         let mut tp = TextPlotter::new(opt, output);
         tp.update(5.0);
         tp.update(2.0);
-        assert_eq!(tp.output, b"=====..... 5\n==........ 2\n");
+        assert_eq!(tp.output, b"[#####     ] 5\n[##        ] 2\n");
     }
 }
