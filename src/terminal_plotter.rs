@@ -8,7 +8,7 @@ use plotters_backend::{
 };
 use std::collections::vec_deque::VecDeque;
 use std::error::Error;
-use tokio::time::Instant;
+use tokio::time::{Duration, Instant};
 
 type Sender = tokio::sync::mpsc::UnboundedSender<HistoryRecord>;
 
@@ -208,6 +208,7 @@ pub(crate) struct TerminalMultiPlotter {
 
 struct Worker {
     opt: PlotterOpt,
+    max_elapsed_time: Duration,
     drawing_area: DrawingArea<TextDrawingBackend, plotters::coord::Shift>,
     histories: Vec<History>,
 }
@@ -231,6 +232,7 @@ impl MultiPlotter for TerminalMultiPlotter {
                 opt,
                 drawing_area,
                 histories: Vec::default(),
+                max_elapsed_time: Duration::from_secs(opt.width as u64),
             };
 
             while let Some(hr) = rx.blocking_recv() {
@@ -301,10 +303,19 @@ impl Worker {
             self.histories.push(History::default());
         }
 
+        let max_elapsed_time = self.max_elapsed_time;
+
         if let Some(history) = self.histories.get_mut(history_id) {
             let history = &mut history.0;
 
             history.push_back(record);
+
+            let to_be_removed = history
+                .iter()
+                .take_while(|(x, _)| x.elapsed() > max_elapsed_time)
+                .count();
+
+            history.drain(0..to_be_removed);
 
             self.draw_chart().unwrap();
         }
