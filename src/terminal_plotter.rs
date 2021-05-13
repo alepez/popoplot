@@ -19,6 +19,7 @@ struct History(VecDeque<Record>);
 
 type Record = (f64, f64);
 
+#[derive(Debug)]
 struct HistoryRecord {
     history_id: usize,
     record: Record,
@@ -36,7 +37,7 @@ impl Plotter for TerminalPlotter {
             record,
             history_id: self.history_id,
         };
-        self.tx.send(hr);
+        self.tx.send(hr).unwrap();
     }
 }
 
