@@ -41,12 +41,6 @@ impl Plotter for TerminalPlotter {
     }
 }
 
-impl TerminalPlotter {
-    fn new(tx: Sender, history_id: usize) -> Self {
-        TerminalPlotter { tx, history_id }
-    }
-}
-
 #[derive(Copy, Clone)]
 enum PixelState {
     Empty,
@@ -254,7 +248,7 @@ impl MultiPlotter for TerminalMultiPlotter {
         let tx = self.tx.clone();
         self.children_count += 1;
         let history_id = self.children_count;
-        let plotter = TerminalPlotter::new(tx, history_id);
+        let plotter = TerminalPlotter { tx, history_id };
 
         Box::new(plotter)
     }
