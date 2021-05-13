@@ -8,6 +8,7 @@ use plotters_backend::{
 };
 use std::collections::vec_deque::VecDeque;
 use std::error::Error;
+use tokio::time::Instant;
 
 type Sender = tokio::sync::mpsc::UnboundedSender<HistoryRecord>;
 
@@ -17,7 +18,7 @@ unsafe impl Send for TerminalPlotter {}
 #[derive(Default)]
 struct History(VecDeque<Record>);
 
-type Record = (f64, f64);
+type Record = (Instant, f64);
 
 #[derive(Debug)]
 struct HistoryRecord {
@@ -32,7 +33,7 @@ pub struct TerminalPlotter {
 
 impl Plotter for TerminalPlotter {
     fn update(&mut self, y: f64) {
-        let record = (0.0, y);
+        let record = (Instant::now(), y);
         let hr = HistoryRecord {
             record,
             history_id: self.history_id,
@@ -281,8 +282,11 @@ impl Worker {
             .draw()?;
 
         for history in &self.histories {
-            let history = history.0.clone();
-            chart.draw_series(LineSeries::new(history.into_iter(), &RED))?;
+            let history = history
+                .0
+                .iter()
+                .map(|(x, y)| (-x.elapsed().as_secs_f64(), *y));
+            chart.draw_series(LineSeries::new(history, &RED))?;
         }
 
         drawing_area.present()?;
@@ -301,14 +305,6 @@ impl Worker {
             let history = &mut history.0;
 
             history.push_back(record);
-
-            for (x, _) in history.iter_mut() {
-                *x = *x - 1.0;
-            }
-
-            if history.len() > self.opt.width {
-                history.pop_front();
-            }
 
             self.draw_chart().unwrap();
         }
