@@ -94,6 +94,17 @@ pub struct TextDrawingBackend<W: Write> {
     output: W,
 }
 
+impl<W: Write> TextDrawingBackend<W> {
+    fn new(width: usize, output: W) -> Self {
+        let pixel_count = 5000;
+        TextDrawingBackend {
+            state: vec![PixelState::Empty; pixel_count],
+            width,
+            output,
+        }
+    }
+}
+
 impl<W: Write> DrawingBackend for TextDrawingBackend<W> {
     type ErrorType = std::io::Error;
 
@@ -224,11 +235,7 @@ impl MultiPlotter for TerminalMultiPlotter {
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
         let thread = std::thread::spawn(move || {
-            let backend = TextDrawingBackend {
-                state: vec![PixelState::Empty; 5000],
-                width: opt.width,
-                output: std::io::stdout(),
-            };
+            let backend = TextDrawingBackend::new(opt.width, std::io::stdout());
 
             let drawing_area = backend.into_drawing_area();
 
@@ -364,11 +371,7 @@ mod tests {
         let output = MockOutput::default();
         let opt = PlotterOpt { width: 100, range };
 
-        let backend = TextDrawingBackend {
-            state: vec![PixelState::Empty; 5000],
-            width: opt.width,
-            output: output.clone(),
-        };
+        let backend = TextDrawingBackend::new(opt.width, output.clone());
 
         let drawing_area = backend.into_drawing_area();
 
