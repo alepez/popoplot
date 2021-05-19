@@ -214,7 +214,6 @@ struct Worker<W: Write> {
     max_elapsed_time: Duration,
     drawing_area: DrawingArea<TextDrawingBackend<W>, plotters::coord::Shift>,
     histories: Vec<History>,
-    next_draw_time: Instant,
 }
 
 impl MultiPlotter for TerminalMultiPlotter {
@@ -233,12 +232,13 @@ impl MultiPlotter for TerminalMultiPlotter {
 
             let drawing_area = backend.into_drawing_area();
 
+            let mut next_draw_time = Instant::now();
+
             let mut worker = Worker {
                 opt,
                 drawing_area,
                 histories: Vec::default(),
                 max_elapsed_time: Duration::from_secs(opt.width as u64),
-                next_draw_time: Instant::now(),
             };
 
             while let Some(hr) = rx.blocking_recv() {
@@ -246,9 +246,9 @@ impl MultiPlotter for TerminalMultiPlotter {
 
                 let now = Instant::now();
 
-                if now.ge(&worker.next_draw_time) {
+                if now.ge(&next_draw_time) {
                     worker.draw_chart().unwrap();
-                    worker.next_draw_time = now + Duration::from_millis(40);
+                    next_draw_time = now + Duration::from_millis(40);
                 }
             }
         });
@@ -377,7 +377,6 @@ mod tests {
             drawing_area,
             histories: Vec::default(),
             max_elapsed_time: Duration::from_secs(opt.width as u64),
-            next_draw_time: Instant::now(),
         };
 
         let end = Instant::now();
