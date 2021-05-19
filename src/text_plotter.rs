@@ -110,9 +110,6 @@ mod tests {
         tp.update(2.0);
         tp.update(-2.0);
         tp.update(12.0);
-        assert_eq!(
-            tp.output,
-            b"[#####     ] 5\n[##        ] 2\nX          ] -2\n[##########X 12\n"
-        );
+        insta::assert_snapshot!(String::from_utf8(tp.output).unwrap());
     }
 }

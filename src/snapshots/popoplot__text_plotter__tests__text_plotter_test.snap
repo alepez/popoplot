@@ -1,0 +1,10 @@
+---
+source: src/text_plotter.rs
+expression: "String::from_utf8(tp.output).unwrap()"
+
+---
+[#####     ] 5
+[##        ] 2
+X          ] -2
+[##########X 12
+

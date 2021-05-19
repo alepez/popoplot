@@ -22,3 +22,6 @@ tokio-util = { version = "0.6", features = ["codec"] }
 structopt = "0.3.21"
 plotters = { version = "0.3.0" }
 plotters-backend = { version = "0.3.0" }
+
+[dev-dependencies]
+insta = "1.7.1"
