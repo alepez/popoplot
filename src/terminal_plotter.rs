@@ -117,6 +117,9 @@ impl<W: Write> DrawingBackend for TextDrawingBackend<W> {
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
+        // FIXME Is this portable?
+        self.output.write(b"\x1B[2J\x1B[1;1H");
+
         Ok(())
     }
 
@@ -214,11 +217,6 @@ impl<W: Write> DrawingBackend for TextDrawingBackend<W> {
     }
 }
 
-// FIXME Is this portable?
-fn clear_screen() {
-    print!("\x1B[2J\x1B[1;1H");
-}
-
 pub(crate) struct TerminalMultiPlotter {
     tx: Sender,
     children_count: usize,
@@ -286,8 +284,6 @@ impl MultiPlotter for TerminalMultiPlotter {
 impl<W: Write> Worker<W> {
     fn draw_chart(&mut self) -> Result<(), Box<dyn Error>> {
         let drawing_area = &mut self.drawing_area;
-
-        clear_screen();
 
         let width = self.opt.width;
         let range = self.opt.range;
