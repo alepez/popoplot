@@ -91,15 +91,19 @@ impl PixelState {
 pub struct TextDrawingBackend<W: Write> {
     state: Vec<PixelState>,
     width: usize,
+    height: usize,
     output: W,
 }
 
 impl<W: Write> TextDrawingBackend<W> {
-    fn new(width: usize, output: W) -> Self {
-        let pixel_count = 5000;
+    fn new(width: usize, height: usize, output: W) -> Self {
+        // Needs space for margins, so multiply by two to be sure
+        let pixel_count = 2 * width * height;
+
         TextDrawingBackend {
             state: vec![PixelState::Empty; pixel_count],
             width,
+            height,
             output,
         }
     }
@@ -109,7 +113,7 @@ impl<W: Write> DrawingBackend for TextDrawingBackend<W> {
     type ErrorType = std::io::Error;
 
     fn get_size(&self) -> (u32, u32) {
-        (self.width as u32, 30)
+        (self.width as u32, self.height as u32)
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
@@ -117,8 +121,9 @@ impl<W: Write> DrawingBackend for TextDrawingBackend<W> {
     }
 
     fn present(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
-        let w = self.width as usize;
-        for r in 0..30 {
+        let w = self.width;
+        let h = self.height;
+        for r in 0..h {
             let mut buf = String::new();
             for c in 0..w {
                 buf.push(self.state[r * w + c].to_char());
@@ -235,7 +240,8 @@ impl MultiPlotter for TerminalMultiPlotter {
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
         let thread = std::thread::spawn(move || {
-            let backend = TextDrawingBackend::new(opt.width, std::io::stdout());
+            let height = 30;
+            let backend = TextDrawingBackend::new(opt.width, height, std::io::stdout());
 
             let drawing_area = backend.into_drawing_area();
 
@@ -371,7 +377,8 @@ mod tests {
         let output = MockOutput::default();
         let opt = PlotterOpt { width: 100, range };
 
-        let backend = TextDrawingBackend::new(opt.width, output.clone());
+        let height = 30;
+        let backend = TextDrawingBackend::new(opt.width, height, output.clone());
 
         let drawing_area = backend.into_drawing_area();
 
