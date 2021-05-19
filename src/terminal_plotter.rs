@@ -221,7 +221,7 @@ impl MultiPlotter for TerminalMultiPlotter {
     {
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
 
-        let thread = std::thread::spawn(move || loop {
+        let thread = std::thread::spawn(move || {
             let backend = TextDrawingBackend {
                 state: vec![PixelState::Empty; 5000],
                 width: opt.width,
