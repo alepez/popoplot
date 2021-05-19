@@ -8,6 +8,7 @@ use plotters_backend::{
 };
 use std::collections::vec_deque::VecDeque;
 use std::error::Error;
+use std::io::Write;
 use tokio::time::{Duration, Instant};
 
 type Sender = tokio::sync::mpsc::UnboundedSender<HistoryRecord>;
@@ -87,12 +88,13 @@ impl PixelState {
     }
 }
 
-pub struct TextDrawingBackend {
+pub struct TextDrawingBackend<W: Write> {
     state: Vec<PixelState>,
     width: usize,
+    output: W,
 }
 
-impl DrawingBackend for TextDrawingBackend {
+impl<W: Write> DrawingBackend for TextDrawingBackend<W> {
     type ErrorType = std::io::Error;
 
     fn get_size(&self) -> (u32, u32) {
@@ -110,7 +112,8 @@ impl DrawingBackend for TextDrawingBackend {
             for c in 0..w {
                 buf.push(self.state[r * w + c].to_char());
             }
-            println!("{}", buf);
+            self.output.write(buf.as_bytes()).unwrap();
+            self.output.write(b"\n").unwrap();
         }
 
         self.state.fill(PixelState::Empty);
@@ -206,10 +209,10 @@ pub(crate) struct TerminalMultiPlotter {
     _thread: std::thread::JoinHandle<()>,
 }
 
-struct Worker {
+struct Worker<W: Write> {
     opt: PlotterOpt,
     max_elapsed_time: Duration,
-    drawing_area: DrawingArea<TextDrawingBackend, plotters::coord::Shift>,
+    drawing_area: DrawingArea<TextDrawingBackend<W>, plotters::coord::Shift>,
     histories: Vec<History>,
     next_draw_time: Instant,
 }
@@ -225,6 +228,7 @@ impl MultiPlotter for TerminalMultiPlotter {
             let backend = TextDrawingBackend {
                 state: vec![PixelState::Empty; 5000],
                 width: opt.width,
+                output: std::io::stdout(),
             };
 
             let drawing_area = backend.into_drawing_area();
@@ -266,7 +270,7 @@ impl MultiPlotter for TerminalMultiPlotter {
     }
 }
 
-impl Worker {
+impl<W: Write> Worker<W> {
     fn draw_chart(&mut self) -> Result<(), Box<dyn Error>> {
         let drawing_area = &mut self.drawing_area;
 
@@ -333,16 +337,37 @@ impl Worker {
 mod tests {
     use super::super::Range;
     use super::*;
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone, Default)]
+    struct MockOutput(Arc<Mutex<Vec<u8>>>);
+
+    impl Write for MockOutput {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().unwrap().write(buf)
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl From<MockOutput> for String {
+        fn from(x: MockOutput) -> Self {
+            String::from_utf8(x.0.lock().unwrap().clone()).unwrap()
+        }
+    }
 
     #[test]
     fn worker_test() {
         let range = Range::new(0.0, 10.0);
-        // let output = Vec::new();
+        let output = MockOutput::default();
         let opt = PlotterOpt { width: 100, range };
 
         let backend = TextDrawingBackend {
             state: vec![PixelState::Empty; 5000],
             width: opt.width,
+            output: output.clone(),
         };
 
         let drawing_area = backend.into_drawing_area();
@@ -369,5 +394,7 @@ mod tests {
         });
 
         worker.draw_chart().unwrap();
+
+        insta::assert_snapshot!(String::from(output));
     }
 }
