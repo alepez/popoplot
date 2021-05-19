@@ -328,3 +328,46 @@ impl Worker {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::Range;
+    use super::*;
+
+    #[test]
+    fn worker_test() {
+        let range = Range::new(0.0, 10.0);
+        // let output = Vec::new();
+        let opt = PlotterOpt { width: 100, range };
+
+        let backend = TextDrawingBackend {
+            state: vec![PixelState::Empty; 5000],
+            width: opt.width,
+        };
+
+        let drawing_area = backend.into_drawing_area();
+
+        let mut worker = Worker {
+            opt,
+            drawing_area,
+            histories: Vec::default(),
+            max_elapsed_time: Duration::from_secs(opt.width as u64),
+            next_draw_time: Instant::now(),
+        };
+
+        let end = Instant::now();
+        let begin = end - Duration::from_secs(50);
+
+        worker.update_history(HistoryRecord {
+            history_id: 0,
+            record: (begin, 0.0),
+        });
+
+        worker.update_history(HistoryRecord {
+            history_id: 0,
+            record: (end, 10.0),
+        });
+
+        worker.draw_chart().unwrap();
+    }
+}
