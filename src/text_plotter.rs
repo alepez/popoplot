@@ -108,6 +108,11 @@ mod tests {
         let mut tp = TextPlotter::new(opt, output);
         tp.update(5.0);
         tp.update(2.0);
-        assert_eq!(tp.output, b"[#####     ] 5\n[##        ] 2\n");
+        tp.update(-2.0);
+        tp.update(12.0);
+        assert_eq!(
+            tp.output,
+            b"[#####     ] 5\n[##        ] 2\nX          ] -2\n[##########X 12\n"
+        );
     }
 }
